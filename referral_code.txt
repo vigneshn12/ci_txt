@@ -1,0 +1,357 @@
+Mysql :
+
+download :
+---------
+mysqldump -u root -p test > test.sql
+
+
+upload:
+-------
+mysql -u root -p db_name < "C:\folder_name\db_name.sql"
+
+
+
+Common :
+
+ba_contr
+$helpers = ["form","general_helper","url"];
+
+
+$this->db = \Config\Database::connect();
+$this->uri = service('uri');
+$this->session = \Config\Services::session();
+$this->cache   = \Config\Services::cache();
+
+$this->outputData['session'] = \Config\Services::session();
+$this->outputData['uri'] = service('uri');
+$this->outputData['db'] = \Config\Database::connect();
+
+$this->General_model = new General();
+
+
+img upload:
+-----------
+if(!empty($_FILES['photo']['name'])){
+	if($file = $this->request->getFile('photo')){
+		if (!$file->hasMoved()) {
+			$name = $file->getName();
+			$ext = $file->getClientExtension();
+			$data['photo'] = $file->getRandomName();   	     
+			$file->move('./uploads/photo/',$data['photo']);
+		}
+	}
+}
+
+
+
+general model:
+--------------
+
+<?php
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class General extends Model
+{
+	public function __construct()
+    {
+        $this->db = \Config\Database::connect();
+    }
+	
+}
+
+
+
+function insert_update_qry($table="", $data=array(), $id=0)
+{
+	$builder = $this->db->table($table);
+	if($id)
+	{
+		$builder->set($data);
+		$builder->where('id',$id);
+		$builder->update();
+		return true;
+	} else {
+		$builder->insert($data);
+		return true;
+	}
+}
+
+function get_table($table){
+	$builder = $this->db->table($table);
+	return $builder->get();
+}
+
+
+function fetch_table($table="", $condition=null, $order_by=null, $limit=null, $offset=null){
+	$builder = $this->db->table($table);
+	if($condition){
+		$builder->where($condition);
+	}
+	if($limit !='' && $start !='' ){
+		$builder->limit($limit, $start);
+	}
+	if($limit !='' && $start =='' ){
+		$builder->limit($limit);
+	}
+	if($order_by !=''){
+		$builder->orderBy($order_by);
+	}		
+	$query = $builder->get();
+	if ($query) 
+	{
+		return $query->getResult();
+	}
+	return array();
+}
+
+
+
+
+Success/Error Flash mgs:
+-----------------------
+https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.css
+https://cdnjs.cloudflare.com/ajax/libs/jquery-toast-plugin/1.3.2/jquery.toast.min.js
+
+<link href="<?php echo base_url(); ?>/styles/admin/plugins/bower_components/toast-master/css/jquery.toast.css" rel="stylesheet">
+<script src="<?php echo base_url(); ?>/styles/admin/plugins/bower_components/toast-master/js/jquery.toast.js"></script>
+<script type="text/javascript">
+<?php if($session->getFlashdata('success')){ ?>
+	$.toast({
+		heading: 'Success',
+		text: '<?php echo $session->getFlashdata('success'); ?>',
+		position: 'top-right',
+		loaderBg: '#0c4170',
+		icon: 'success',
+		hideAfter: 5000,
+		stack: 6
+	});            
+	<?php } elseif($session->getFlashdata('error')){ ?>
+	$.toast({
+		heading: 'Error',
+		text: '<?php echo $session->getFlashdata('error'); ?>',
+		position: 'top-right',
+		loaderBg: '#ff6849',
+		icon: 'error',
+		hideAfter: 5000,
+		stack: 6
+	});
+<?php } ?>
+</script>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+
+
+
+
+helpers
+
+<?php 
+
+use App\Models\General;
+
+if (!function_exists('home_template')) {
+
+	function home_template($template_name, $vars = array(), $return = FALSE){
+		if($return):
+			$content  = view('templates/header_new', $vars, $return);
+			$content .= view('frontend/'.$template_name, $vars, $return);
+			$content .= view('templates/footer_new', $vars, $return);
+		return $content;
+		else:
+			echo view('frontend/templates/header_new', $vars);
+			echo view('frontend/'.$template_name, $vars);
+			echo view('frontend/templates/footer_new', $vars);
+		endif;
+	}
+}
+
+
+
+user_template('user_profile',$this->outputData);
+
+
+https://getbootstrap.com/docs/4.0/components/forms/
+
+
+
+import:
+-------
+
+if($_FILES['import_file']['name']){
+					
+	// echo'<pre>'; print_r($_FILES); echo'</pre>';
+	// exit;
+
+	if($file = $this->request->getFile('import_file')){
+		if(!$file->hasMoved()){
+			$name = $file->getName();
+			$ext = $file->getClientExtension();
+			$insert_data['file'] = $file->getRandomName();
+			$file->move('./uploads/company_import/',$insert_data['file']);
+		}
+	}
+
+	$reader = ReaderEntityFactory::createReaderFromFile('./uploads/company_import/'.$insert_data['file']);
+	$reader->open('./uploads/company_import/'.$insert_data['file']);
+	foreach ($reader->getSheetIterator() as $sheet) {
+		foreach ($sheet->getRowIterator() as $key => $row) {
+			
+			$company_name = "";
+			$company_cell = $row->getCellAtIndex(0);
+			if($company_cell){
+				$company_name = $company_cell->getValue();
+			}
+			$grtjh[] = array_filter(explode(';',$company_name));
+
+		}
+	}
+	
+	
+	foreach ($grtjh as $keys => $rowf) {
+		$importar = array();
+		if(!empty($rowf[0])) { $importar['symbol_code'] = $rowf[0]; }
+		if(!empty($rowf[1])) { $importar['development_stage'] = $rowf[1]; }
+		if(!empty($rowf[2])) { $importar['develop_lowstage'] = $rowf[2]; }
+		if(!empty($rowf[3])) { $importar['mining_country'] = $rowf[3]; }
+		if(!empty($rowf[4])) { $importar['mining_metals'] = $rowf[4]; }
+		
+		$importar1[] = $importar;
+	}
+	array_shift($importar1);
+	foreach ($importar1 as $keyr => $result) {
+		if(count($result) > 1){
+			$company_detail = $this->General_model->fetch_table("company_users",array("symbol_code" => $result['symbol_code']));
+			if(!empty($company_detail)){
+				$response = $this->General_model->insert_update("company_users",array_filter($result),array('id'=> $company_detail[0]->id));
+			} else {
+			}
+		}
+	}
+
+	if(file_exists(FCPATH.'/uploads/company_import/'.$insert_data['file'])){
+		unlink('./uploads/company_import/'.$insert_data['file']);
+	} 
+}
+
+
+export:
+
+$query = $this->General_model->fetch_table("language_content",$condition);
+			if(count($query) > 0){
+				$delimiter = ",";
+				$filename = "language_content_" . date('Y-m-d') . ".csv";
+				$f = fopen('php://memory', 'w');
+				$fields = array("language_keyword", "language_content");
+				$fields = str_replace('""', '', $fields);
+				fputs($f, implode(',',$fields)."\n");
+				foreach($query as $q)
+				{
+					if($q->language_content!=""){
+						$lineData = array($q->language_keyword,$q->language_content);
+						fputcsv($f,$lineData, $delimiter);
+					}
+				}
+				fseek($f, 0);
+				header('Content-Type: text/csv');
+				header('Content-Disposition: attachment; filename="' . $filename . '";');
+				fpassthru($f);
+			}
+			exit;
+			
+			
+api fetch:
+----------
+
+$authorization = $this->request->getHeaderLine('Authorization');
+		if($authorization !="GxTQs8V7sjrsDbwO2mn9WgrxtYmnT8tk9WLD"){
+		   http_response_code(404);
+           echo json_encode(array("error" => "Authentication error"));
+           exit;
+        }
+		$postdata = file_get_contents("php://input");
+        $data = json_decode($postdata);
+
+		if(!empty($this->request->getpost())){
+			$data = $this->request->getpost();
+		} elseif(!empty($data)){
+			$data = $data;
+		}
+		
+		if(!empty($data)){
+			if(!empty($data->company_symbol)){
+				$builder = $this->db->table('project');
+				$builder->select('id, project_name, connect_companies, country');
+				$builder->where('FIND_IN_SET ("'.$data->company_symbol.'",`connect_companies`)');
+				$getprojects = $builder->get()->getResult();
+				
+				if(!empty($getprojects)){
+					foreach($getprojects as $res){
+						$return_data[] = array(
+									'project_id' => $res->id,
+									'project_name' => $res->project_name,
+									'project_country' => $res->country,
+								);
+					}
+					http_response_code(200);
+					echo json_encode($return_data, JSON_PRETTY_PRINT);
+
+				} else {
+					http_response_code(404);
+					echo json_encode(array("Error" => "No projects available in this company."));
+					exit;
+				}
+			} else {
+				http_response_code(404);
+				echo json_encode(array("Error" => "Date not vaild"));
+				exit;
+			}
+		} else {
+			http_response_code(404);
+			echo json_encode(array("Error" => "Data not vaild"));
+			exit;
+		}
+		
+post:
+
+$data = array(
+					"from_date"=> "2023-03-01",
+					"till_date"=> "2023-03-30",
+				);
+		
+		$curl = curl_init();
+		curl_setopt_array($curl, array(
+		  CURLOPT_URL => 'http://localhost/vignesh/codeigniter/livesite/golddiscovery/api/news_label_info',
+		  CURLOPT_RETURNTRANSFER => true,
+		  CURLOPT_ENCODING => '',
+		  CURLOPT_MAXREDIRS => 10,
+		  CURLOPT_TIMEOUT => 30,
+		  CURLOPT_FOLLOWLOCATION => false,
+		  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		  CURLOPT_CUSTOMREQUEST => 'POST',
+		  CURLOPT_POSTFIELDS => json_encode($data),
+		  CURLOPT_HTTPHEADER => array(
+			'Authorization: GxTQs8V7sjrsDbwO2mn9WgrxtYmnT8tk9WLD',
+			'Content-Type: application/json'
+		  ),
+		));
+
+		$http_status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
+		curl_close($curl);
+		
+		if($err){
+			echo "Error #:" .$http_status.' - '. $err;
+		} else {
+			echo'<pre>'; print_r($response); echo'</pre>';
+		}
+		exit;
+		
+		
+GET:
+---
+
